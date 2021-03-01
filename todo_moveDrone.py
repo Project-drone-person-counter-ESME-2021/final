@@ -21,7 +21,7 @@ import roslib
 import argparse
 
 # import file
-import propre
+import function
 
 
 class MoveDrone:
@@ -35,6 +35,8 @@ class MoveDrone:
         self.move_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=100)  # Publish commands to drone
         self.bridge = CvBridge()
         self.image_sub = rospy.Subscriber("/ardrone/front/image_raw", Image, self.callback)
+
+	self.first_img_taken = False
 
     def move_drone(self, speed=[0.0, 0.0, 0.0], orient=[0.0, 0.0, 0.0]):
         vel_msg = Twist()
@@ -52,13 +54,18 @@ class MoveDrone:
     def callback(self, data):
         try:
             self.cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+	    self.first_img_taken = True
         except CvBridgeError as e:
             print("error")
             print(e)
 
+    def get_first_img_taken(self):
+	return self.first_img_taken
+
     def take_a_screenshot(self):
-        if not (isinstance(self.cv_image, int)):
+        if self.first_img_taken:
             print("new image")
+	    cv2.imshow("test", self.cv_image)
             return self.cv_image
         else:
             print("no image")
@@ -105,17 +112,23 @@ if __name__ == '__main__':
     t1 = time.time()
 
     # define time to rotate and number of pictures
-    nb_pictures = 5
-    nb_secondes = 10
+    nb_pictures = 2.0
+    nb_secondes = 1.0
 
     for index in range(5):
         t1 = time.time()
         while time.time() - t1 < nb_secondes / nb_pictures:
             move.move_drone(orient=[0.0, 0.0, -1.0])
 
+    t1 = time.time()
+    list_img_concat = []
+
+    while time.time()-t1 < 1:
+        move.move_drone()
+
         img = move.take_a_screenshot()
 
-        if not(isinstance(img, int)):
+        if not(move.get_first_img_taken()):
             # if no picture is send from the function
             print("error no picture")
         elif index == 0:
@@ -126,10 +139,14 @@ if __name__ == '__main__':
             right_img = img
 
             # concat two img
-            concat_img = propre.concat(left_img, right_img)
+            verif, concat_img = function.concat(left_img, right_img)
 
-            # concat_img become left_img
-            left_img = concat_img
+            if verif:
+                # concat_img become left_img
+                left_img = concat_img
+            else:
+                list_img_concat.append(concat_img)
+                left_img = right_img
 
 
     print("Hovering")
@@ -142,6 +159,21 @@ if __name__ == '__main__':
     while (time.time() - t1 < 5):
         move.land_drone()
 
-    cv2.imshow("concat image", concat_img)
+    print("Do you wish to save the image(s) \nY : yes \nanythings else : no")
+
+    verify_save = False
+
+    tmp_input = input()
+    if tmp_input == "Y":
+        verify_save = True
+
+    index = 1
+    for img in list_img_concat:
+        cv2.imshow("test " + str(index), img)
+        if verify_save:
+            cv2.imwrite('result/', image_gray)
+        index += 1
 
     cv2.waitKey(0)
+    cv2.destroyAllWindows()
+

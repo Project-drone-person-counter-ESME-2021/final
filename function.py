@@ -74,20 +74,23 @@ def concat_2_img(img_left, img_left_cvt, img_right, img_right_cvt):
               "".format(len(good), min_match_count, len(good) / min_match_count)
         plt.show()
         cv2.waitKey(0)
-        quit()
+
+        return False, np.zeros(shape=(50, 50, 3))
 
     dst = cv2.warpPerspective(img_right, M, (img_left.shape[1] + img_right.shape[1], img_left.shape[0]))
     dst[0:img_left.shape[0], 0:img_left.shape[1]] = img_left
 
-    return trim(dst)
+    return True, trim(dst)
 
 
 def concat(img_left, img_right):
     img_left_cvt = convert_to_img_cv2(img_left)
     img_right_cvt = convert_to_img_cv2(img_right)
 
+    verif, img = concat_2_img(img_left, img_left_cvt, img_right, img_right_cvt)
+
     # return concat img
-    return concat_2_img(img_left, img_left_cvt, img_right, img_right_cvt)
+    return verif, img
 
 
 # use to debug
