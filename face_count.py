@@ -5,7 +5,7 @@ def face_count(img) :
     img = cv2.imread(img)
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+    faces = face_cascade.detectMultiScale(gray, 1.05, 5)
     face_count = len(faces)
 
     return face_count
