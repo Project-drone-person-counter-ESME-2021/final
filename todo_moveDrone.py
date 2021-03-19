@@ -65,7 +65,6 @@ class MoveDrone:
     def take_a_screenshot(self):
         if self.first_img_taken:
             print("new image")
-	    cv2.imshow("test", self.cv_image)
             return self.cv_image
         else:
             print("no image")
@@ -91,6 +90,14 @@ def main(args):
     except KeyboardInterrupt:
         print("Shutting down")
 
+def face_count(img) :
+    face_cascade = cv2.CascadeClassifier('/home/yannb/Documents/dronetp/src/my_package/scripts/haarcascade_frontalface_default.xml')
+
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, 1.1, 1)
+    face_count = len(faces)
+
+    return face_count
 
 if __name__ == '__main__':
     # keep it for now
@@ -112,42 +119,55 @@ if __name__ == '__main__':
     t1 = time.time()
 
     # define time to rotate and number of pictures
-    nb_pictures = 2.0
+    nb_pictures = 8.0
     nb_secondes = 1.0
 
-    for index in range(5):
+    index_take_picture = 0
+
+    list_img_concat = []
+
+    is_image = False
+
+    for index in range(int(nb_pictures)):
         t1 = time.time()
         while time.time() - t1 < nb_secondes / nb_pictures:
             move.move_drone(orient=[0.0, 0.0, -1.0])
 
-    t1 = time.time()
-    list_img_concat = []
+	t1 = time.time()
+	while time.time()- t1 < 1:
+		move.move_drone()
 
-    while time.time()-t1 < 1:
-        move.move_drone()
+	img = move.take_a_screenshot()
 
-        img = move.take_a_screenshot()
+	if not(move.get_first_img_taken()):
+	    # if no picture is send from the function
+	    print("error no picture")
+	elif index_take_picture == 0:
+	    # first iteration store picture to be the first right image
+	    left_img = img
+	    index_take_picture += 1
 
-        if not(move.get_first_img_taken()):
-            # if no picture is send from the function
-            print("error no picture")
-        elif index == 0:
-            # first iteration store picture to be the first right image
-            left_img = img
-        else:
-            # get the right img
-            right_img = img
+	    is_image = True
+	else:
+	    # get the right img
+	    right_img = img
 
-            # concat two img
-            verif, concat_img = function.concat(left_img, right_img)
+	    # concat two img
+	    verif, concat_img = function.concat(left_img, right_img)
 
-            if verif:
-                # concat_img become left_img
-                left_img = concat_img
-            else:
-                list_img_concat.append(concat_img)
-                left_img = right_img
+	    if verif:
+		# concat_img become left_img
+		left_img = concat_img
+	    else:
+		list_img_concat.append(left_img)
+		left_img = right_img
 
+	    #index_take_picture += 1
+
+    if is_image == True:
+	list_img_concat.append(left_img)
+    else :
+	print("no imsage")
 
     print("Hovering")
     t1 = time.time()
@@ -163,17 +183,25 @@ if __name__ == '__main__':
 
     verify_save = False
 
-    tmp_input = input()
+    tmp_input = raw_input()
     if tmp_input == "Y":
         verify_save = True
 
     index = 1
+    nb_faces = 0
+
+    print("lenght list image : {}".format(len(list_img_concat)))
+
     for img in list_img_concat:
         cv2.imshow("test " + str(index), img)
+	nb_faces += face_count(img)
+	print("picture n {}, nb of faces : {}".format(index, nb_faces))
         if verify_save:
-            cv2.imwrite('result/', image_gray)
+	    path = "/home/yannb/Pictures/result/image_" + str(index) + ".png"
+            cv2.imwrite(path, img)
         index += 1
-
+    print("number of face : {}".format(nb_faces))
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
 

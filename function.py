@@ -73,7 +73,6 @@ def concat_2_img(img_left, img_left_cvt, img_right, img_right_cvt):
         print "Not enought matches are found - {} / {}, {}" \
               "".format(len(good), min_match_count, len(good) / min_match_count)
         plt.show()
-        cv2.waitKey(0)
 
         return False, np.zeros(shape=(50, 50, 3))
 
